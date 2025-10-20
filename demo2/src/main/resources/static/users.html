@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Users Info</title>
+    <link href="https://fonts.googleapis.com/css?family=Roboto:400,700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background: #f7fafc;
+            font-family: 'Roboto', Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 40px auto;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+            padding: 32px 24px 24px 24px;
+        }
+        h1 {
+            color: #2d3748;
+            margin-bottom: 8px;
+        }
+        p {
+            color: #4a5568;
+            margin-bottom: 24px;
+        }
+        h2 {
+            text-align: center;
+            color: #2b6cb0;
+            margin-top: 32px;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 20px 0;
+            background: #f9fafb;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        th, td {
+            border: 1px solid #e2e8f0;
+            padding: 10px 12px;
+            text-align: left;
+        }
+        th {
+            background: #ebf8ff;
+            color: #2b6cb0;
+        }
+        tr:hover {
+            background: #e6fffa;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin: 0 auto 24px auto;
+            max-width: 400px;
+            background: #f1f5f9;
+            padding: 20px 16px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(44,62,80,0.04);
+        }
+        label {
+            display: flex;
+            flex-direction: column;
+            font-weight: 500;
+            color: #2d3748;
+        }
+        input[type="text"], input[type="email"] {
+            padding: 8px 10px;
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            margin-top: 4px;
+            font-size: 1em;
+        }
+        button {
+            background: #3182ce;
+            color: #fff;
+            border: none;
+            padding: 10px 0;
+            border-radius: 4px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-top: 8px;
+        }
+        button:hover {
+            background: #2b6cb0;
+        }
+        .success {
+            color: #38a169;
+            text-align: center;
+            margin-bottom: 12px;
+        }
+        .error {
+            color: #e53e3e;
+            text-align: center;
+            margin-bottom: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div style="text-align:center;">
+            <h1>Who wants to come to smokies trip?</h1>
+            <p>Please register with your name and email below to join!</p>
+        </div>
+        <form id="userForm">
+            <h3 style="text-align:center; color:#2b6cb0;">Add User</h3>
+            <div id="formMessage"></div>
+            <label>Name:
+                <input type="text" id="name" required placeholder="Enter your name">
+            </label>
+            <label>Email:
+                <input type="email" id="email" required placeholder="Enter your email">
+            </label>
+            <button type="submit">Register</button>
+        </form>
+        <h2>User List</h2>
+        <table id="usersTable">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- User rows will be inserted here -->
+            </tbody>
+        </table>
+    </div>
+    <script>
+        function loadUsers() {
+            fetch('/api/users')
+                .then(response => response.json())
+                .then(users => {
+                    const tbody = document.querySelector('#usersTable tbody');
+                    tbody.innerHTML = '';
+                    users.forEach(user => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `<td>${user.id}</td><td>${user.name}</td><td>${user.email}</td>`;
+                        tbody.appendChild(row);
+                    });
+                });
+        }
+        window.onload = loadUsers;
+
+        document.getElementById('userForm').onsubmit = function(e) {
+            e.preventDefault();
+            const name = document.getElementById('name').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const messageDiv = document.getElementById('formMessage');
+            messageDiv.textContent = '';
+            messageDiv.className = '';
+            fetch('/api/users', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, email })
+            })
+            .then(response => {
+                if (response.ok) {
+                    loadUsers();
+                    document.getElementById('userForm').reset();
+                    messageDiv.textContent = 'Registration successful!';
+                    messageDiv.className = 'success';
+                } else {
+                    messageDiv.textContent = 'Failed to add user. Please try again.';
+                    messageDiv.className = 'error';
+                }
+            });
+        };
+    </script>
+</body>
+</html>
