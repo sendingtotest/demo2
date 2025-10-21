@@ -1,6 +1,7 @@
 package io.javabrains.demo2.controller;
 
 import io.javabrains.demo2.model.User;
+import io.javabrains.demo2.service.EmailService;
 import io.javabrains.demo2.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -13,6 +14,9 @@ import java.util.List;
 public class UserController {
 
     private final UserService userService;
+
+    @Autowired
+    private EmailService emailService;
 
     @Autowired
     public UserController(UserService userService) {
@@ -33,7 +37,9 @@ public class UserController {
 
     @PostMapping
     public User createUser(@RequestBody User user) {
-        return userService.save(user);
+        User savedUser = userService.save(user);
+        emailService.sendWelcomeEmail(savedUser.getEmail(), savedUser.getName());
+        return savedUser;
     }
 
     @PutMapping("/{id}")

@@ -107,7 +107,7 @@
     <div class="container">
         <div style="text-align:center;">
             <h1>Who wants to come to smokies trip?</h1>
-            <p>Please register with your name and email below to join!</p>
+            <p>Please register with your name and email below to join userlist and the trip plan!</p>
         </div>
         <form id="userForm">
             <h3 style="text-align:center; color:#2b6cb0;">Add User</h3>
@@ -166,7 +166,7 @@
                 if (response.ok) {
                     loadUsers();
                     document.getElementById('userForm').reset();
-                    messageDiv.textContent = 'Registration successful!';
+                    messageDiv.textContent = 'Registration successful!, please check your  email for trip details';
                     messageDiv.className = 'success';
                 } else {
                     messageDiv.textContent = 'Failed to add user. Please try again.';
