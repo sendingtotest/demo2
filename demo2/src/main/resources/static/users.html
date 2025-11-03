@@ -101,6 +101,30 @@
             text-align: center;
             margin-bottom: 12px;
         }
+        /* Delete button specific styles */
+        .delete-btn {
+            background: #e53e3e;
+            color: #fff;
+            padding: 6px 10px;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .delete-btn:hover {
+            background: #c53030;
+        }
+        .actions-cell {
+            text-align: center;
+        }
+        /* Make disabled delete buttons visually greyed-out and unclickable */
+        .delete-btn:disabled {
+            background: #cbd5e1; /* light gray */
+            color: #718096; /* slate gray text */
+            cursor: not-allowed;
+            opacity: 0.9;
+            box-shadow: none;
+        }
     </style>
 </head>
 <body>
@@ -121,12 +145,14 @@
             <button type="submit">Register</button>
         </form>
         <h2>User List</h2>
+        <div id="tableMessage"></div>
         <table id="usersTable">
             <thead>
                 <tr>
                     <th>ID</th>
                     <th>Name</th>
                     <th>Email</th>
+                    <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -135,6 +161,15 @@
         </table>
     </div>
     <script>
+        function clearMessages() {
+            const formMessage = document.getElementById('formMessage');
+            const tableMessage = document.getElementById('tableMessage');
+            formMessage.textContent = '';
+            formMessage.className = '';
+            tableMessage.textContent = '';
+            tableMessage.className = '';
+        }
+
         function loadUsers() {
             fetch('/api/users')
                 .then(response => response.json())
@@ -143,20 +178,25 @@
                     tbody.innerHTML = '';
                     users.forEach(user => {
                         const row = document.createElement('tr');
-                        row.innerHTML = `<td>${user.id}</td><td>${user.name}</td><td>${user.email}</td>`;
+                        row.innerHTML = `<td>${user.id}</td><td>${user.name}</td><td>${user.email}</td><td class="actions-cell"><button class="delete-btn" data-id="${user.id}">Delete</button></td>`;
                         tbody.appendChild(row);
                     });
+                })
+                .catch(err => {
+                    console.error('Error loading users:', err);
+                    const tableMessage = document.getElementById('tableMessage');
+                    tableMessage.textContent = 'Failed to load users.';
+                    tableMessage.className = 'error';
                 });
         }
         window.onload = loadUsers;
 
         document.getElementById('userForm').onsubmit = function(e) {
             e.preventDefault();
+            clearMessages();
             const name = document.getElementById('name').value.trim();
             const email = document.getElementById('email').value.trim();
             const messageDiv = document.getElementById('formMessage');
-            messageDiv.textContent = '';
-            messageDiv.className = '';
             fetch('/api/users', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -166,14 +206,52 @@
                 if (response.ok) {
                     loadUsers();
                     document.getElementById('userForm').reset();
-                    messageDiv.textContent = 'Registration successful!, please check your  email for trip details';
+                    messageDiv.textContent = 'Registration successful! Please check your email for trip details.';
                     messageDiv.className = 'success';
                 } else {
-                    messageDiv.textContent = 'Failed to add user. Please try again.';
-                    messageDiv.className = 'error';
+                    response.text().then(text => {
+                        messageDiv.textContent = text || 'Failed to add user. Please try again.';
+                        messageDiv.className = 'error';
+                    });
                 }
+            })
+            .catch(err => {
+                console.error('Error creating user:', err);
+                messageDiv.textContent = 'Failed to add user. Please try again.';
+                messageDiv.className = 'error';
             });
         };
+
+        // Event delegation for delete buttons
+        document.querySelector('#usersTable tbody').addEventListener('click', function(e) {
+            if (e.target && e.target.matches('button.delete-btn')) {
+                const id = e.target.dataset.id;
+                if (!id) return;
+                if (!confirm('Are you sure you want to delete this user?')) return;
+                // disable button while request is in flight
+                e.target.disabled = true;
+                fetch('/api/users/' + id, { method: 'DELETE' })
+                    .then(response => {
+                        if (response.ok) {
+                            loadUsers();
+                            const tableMessage = document.getElementById('tableMessage');
+                            tableMessage.textContent = 'User deleted successfully.';
+                            tableMessage.className = 'success';
+                        } else {
+                            return response.text().then(text => { throw new Error(text || 'Delete failed'); });
+                        }
+                    })
+                    .catch(err => {
+                        console.error('Error deleting user:', err);
+                        const tableMessage = document.getElementById('tableMessage');
+                        tableMessage.textContent = 'Failed to delete user: ' + err.message;
+                        tableMessage.className = 'error';
+                    })
+                    .finally(() => {
+                        e.target.disabled = false;
+                    });
+            }
+        });
     </script>
 </body>
 </html>
