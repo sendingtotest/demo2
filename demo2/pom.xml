@@ -59,7 +59,6 @@
         </dependency>
 
         <!-- SendGrid client to send emails via HTTP (works from cloud providers that block SMTP) -->
-        <!-- https://mvnrepository.com/artifact/com.sendgrid/sendgrid-java -->
         <dependency>
             <groupId>com.sendgrid</groupId>
             <artifactId>sendgrid-java</artifactId>
