@@ -1,0 +1,38 @@
+{
+  "mcpVersion": "1.0",
+  "name": "demo-mcp",
+  "description": "Model Context Protocol manifest for the demo MCP server",
+  "servers": {
+    "local-stdio": {
+      "type": "stdio",
+      "command": "./my-mcp-binary",
+      "args": [],
+      "env": {
+        "TOKEN": "my_token"
+      }
+    },
+    "sse-demo": {
+      "url": "http://localhost:8080/mcp/events",
+      "requestInit": {
+        "headers": {
+          "Accept": "text/event-stream"
+        }
+      }
+    },
+    "github": {
+      "url": "https://api.githubcopilot.com/mcp/",
+      "requestInit": {
+        "headers": {
+          "Authorization": "Bearer my_token"
+        }
+      }
+    }
+  },
+  "modelEndpoint": "/mcp/model",
+  "eventsEndpoint": "/mcp/events",
+  "ui": {
+    "demoPage": "/mcp-demo.html",
+    "description": "Static demo UI that fetches the model and listens for SSE events"
+  }
+}
+

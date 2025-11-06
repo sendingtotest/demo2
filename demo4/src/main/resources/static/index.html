@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Orders CRUD</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    input, button { padding: 6px; margin: 4px; }
+    table { border-collapse: collapse; width: 100%; margin-top: 10px; }
+    th, td { border: 1px solid #ddd; padding: 8px; }
+    th { background: #f4f4f4; }
+    pre { background:#f9f9f9; padding:10px; border:1px solid #eee; }
+  </style>
+</head>
+<body>
+<h1>Orders CRUD</h1>
+<form id="orderForm">
+  <input type="hidden" id="orderid" />
+  <label>Order Name: <input id="ordername" required /></label>
+  <label>Department: <input id="orderDepartment" required /></label>
+  <button type="submit">Save</button>
+  <button type="button" id="clearBtn">Clear</button>
+</form>
+
+<div>
+  <h2>Orders</h2>
+  <table id="ordersTable">
+    <thead><tr><th>ID</th><th>Name</th><th>Department</th><th>Actions</th></tr></thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<!-- Actuator / Health UI -->
+<div id="actuatorSection">
+  <h2>Application Health (Actuator)</h2>
+  <button id="refreshHealth">Refresh Health</button>
+  <div>
+    <strong>Status:</strong> <span id="healthStatus">-</span>
+  </div>
+  <div>
+    <h3>Details</h3>
+    <pre id="healthDetails">-</pre>
+  </div>
+</div>
+
+<script>
+const api = '/api/orders';
+const actuatorHealth = '/actuator/health';
+
+async function fetchOrders() {
+  const res = await fetch(api);
+  const data = await res.json();
+  const tbody = document.querySelector('#ordersTable tbody');
+  tbody.innerHTML = '';
+  data.forEach(o => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${o.orderid}</td>
+      <td>${o.ordername}</td>
+      <td>${o.orderDepartment}</td>
+      <td>
+        <button data-id="${o.orderid}" class="edit">Edit</button>
+        <button data-id="${o.orderid}" class="delete">Delete</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+async function saveOrder(event) {
+  event.preventDefault();
+  const id = document.getElementById('orderid').value;
+  const order = {
+    ordername: document.getElementById('ordername').value,
+    orderDepartment: document.getElementById('orderDepartment').value
+  };
+  if (id) {
+    await fetch(`${api}/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(order)
+    });
+  } else {
+    await fetch(api, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(order)
+    });
+  }
+  clearForm();
+  await fetchOrders();
+}
+
+function clearForm() {
+  document.getElementById('orderid').value = '';
+  document.getElementById('ordername').value = '';
+  document.getElementById('orderDepartment').value = '';
+}
+
+document.getElementById('orderForm').addEventListener('submit', saveOrder);
+document.getElementById('clearBtn').addEventListener('click', clearForm);
+
+document.querySelector('#ordersTable tbody').addEventListener('click', async (e) => {
+  if (e.target.classList.contains('edit')) {
+    const id = e.target.dataset.id;
+    const res = await fetch(`${api}/${id}`);
+    if (res.ok) {
+      const o = await res.json();
+      document.getElementById('orderid').value = o.orderid;
+      document.getElementById('ordername').value = o.ordername;
+      document.getElementById('orderDepartment').value = o.orderDepartment;
+    }
+  }
+  if (e.target.classList.contains('delete')) {
+    const id = e.target.dataset.id;
+    if (confirm('Delete order ' + id + '?')) {
+      await fetch(`${api}/${id}`, { method: 'DELETE' });
+      await fetchOrders();
+    }
+  }
+});
+
+// Actuator health fetch
+async function fetchHealth() {
+  try {
+    const res = await fetch(actuatorHealth);
+    if (!res.ok) {
+      document.getElementById('healthStatus').innerText = 'ERROR (' + res.status + ')';
+      document.getElementById('healthDetails').innerText = await res.text();
+      return;
+    }
+    const json = await res.json();
+    document.getElementById('healthStatus').innerText = json.status || 'UNKNOWN';
+    document.getElementById('healthDetails').innerText = JSON.stringify(json, null, 2);
+  } catch (err) {
+    document.getElementById('healthStatus').innerText = 'ERROR';
+    document.getElementById('healthDetails').innerText = String(err);
+  }
+}
+
+document.getElementById('refreshHealth').addEventListener('click', fetchHealth);
+
+// initial loads
+fetchOrders();
+fetchHealth();
+</script>
+</body>
+</html>

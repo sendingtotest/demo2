@@ -1,0 +1,61 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>MCP Demo</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    #events { margin-top: 1rem; }
+    .event { border-bottom: 1px solid #ddd; padding: 8px 0; }
+    pre { background: #f5f5f5; padding: 10px; }
+  </style>
+</head>
+<body>
+  <h1>MCP Demo UI</h1>
+  <button id="loadModel">Load Model Context</button>
+  <div id="model"></div>
+
+  <h2>Live Order Events</h2>
+  <div id="events"></div>
+
+  <h2>MCP Manifest</h2>
+  <button id="loadManifest">Load Mcp.json</button>
+  <pre id="manifest"></pre>
+
+  <script>
+    document.getElementById('loadModel').addEventListener('click', async () => {
+      const res = await fetch('/mcp/model');
+      const model = await res.json();
+      document.getElementById('model').innerHTML = '<pre>' + JSON.stringify(model, null, 2) + '</pre>';
+    });
+
+    document.getElementById('loadManifest').addEventListener('click', async () => {
+      const res = await fetch('/Mcp.json');
+      const manifest = await res.json();
+      document.getElementById('manifest').innerText = JSON.stringify(manifest, null, 2);
+    });
+
+    const evtSource = new EventSource('/mcp/events');
+    evtSource.onmessage = function(e) {
+      try {
+        const obj = JSON.parse(e.data);
+        const d = document.createElement('div');
+        d.className = 'event';
+        d.innerHTML = '<strong>' + obj.orderId + '</strong> &nbsp; <em>' + obj.status + '</em>' +
+                      '<div>' + (obj.timestamp || '') + '</div>' +
+                      '<div>' + (obj.details || '') + '</div>';
+        const container = document.getElementById('events');
+        container.insertBefore(d, container.firstChild);
+      } catch (err) {
+        console.error('Invalid event data', e.data);
+      }
+    };
+
+    evtSource.onerror = function(err) {
+      console.error('EventSource failed:', err);
+      evtSource.close();
+    };
+  </script>
+</body>
+</html>
+
